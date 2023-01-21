@@ -10,7 +10,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.WorldChunk;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.dynmap.DynmapCommonAPI;
@@ -25,14 +24,12 @@ import org.slf4j.LoggerFactory;
 public class DynChunks implements ModInitializer {
 	public static final String dynmapSetID = "dynchunks";
 	private static final Logger LOGGER = LoggerFactory.getLogger(dynmapSetID);
-	private static final double opacity = 0.45;
-	//private static HashMap<ChunkPosWorld, AreaMarker> map = new HashMap<>();
 	private static HashMap<World, HashMap<ChunkPos, AreaMarker>> map = new HashMap<>();
 	private static boolean apiEnabled;
 	public static MarkerSet markerSet;
 
-	public static void logInfo(String text, boolean bypass) {
-		if (bypass) {
+	public static void logInfo(String text, boolean info) {
+		if (info) {
 			LOGGER.info("[DynChunks] " + text);
 			return;
 		}
@@ -46,15 +43,11 @@ public class DynChunks implements ModInitializer {
 	public static void purgeUnloaded(World world, boolean all) {
 		ChunkManager cm = world.getChunkManager();
 		HashMap<ChunkPos, AreaMarker> map = getMap(world);
-		ArrayList<ChunkPos> toRemove = new ArrayList<>();
 
-		map.forEach((key, value) -> {
-			if ((!cm.isChunkLoaded(key.x, key.z)) || all) {
-				toRemove.add(key);
-			}
-		});
-
-		toRemove.forEach((pos) -> map.remove(pos).deleteMarker());
+		// TODO: isChunkLoaded returns false for INACCESSIBLE, do we care?
+		map.keySet().stream()
+			.filter(key -> (!cm.isChunkLoaded(key.x, key.z) || all))
+			.forEach(key -> map.remove(key).deleteMarker());
 	}
 
 	private static HashMap<ChunkPos, AreaMarker> getMap(World key) {
@@ -73,6 +66,7 @@ public class DynChunks implements ModInitializer {
 		if (marker == null)
 			return;
 
+		final double opacity = 0.45;
 		switch (level) {
 			case ENTITY_TICKING:
 				marker.setFillStyle(opacity, 0x0AC80A); // Green
@@ -159,9 +153,8 @@ public class DynChunks implements ModInitializer {
 				MarkerAPI markerAPI = api.getMarkerAPI();
 
 				markerSet = markerAPI.getMarkerSet(dynmapSetID);
-                if (markerSet == null) {
+                if (markerSet == null)
                     markerSet = markerAPI.createMarkerSet(dynmapSetID, "Chunks", null, false);
-                }
 
 				apiEnabled = true;
 				logInfo("Started API", true);
@@ -170,26 +163,10 @@ public class DynChunks implements ModInitializer {
 			@Override
 			public void apiDisabled(DynmapCommonAPI api) {
 				apiEnabled = false;
-				// map.forEach((key, value) -> {
-				// 	value.forEach((key2, value2) -> value2.deleteMarker());
-				// 	value.clear();
-				// });
 				map.forEach((key, value) -> purgeUnloaded(key, true));
 				map.clear();
 				logInfo("Closed API", true);
 			}
 		});
 	}
-
-	// private static class MarkerManager extends HashMap<ChunkPos, AreaMarker> {
-	// 	MarkerManager() {
-	// 		super();
-	// 	}
-
-	// 	void purgeMarkers() {
-	// 		forEach((key, value) -> value.deleteMarker());
-	// 		clear();
-	// 	}
-	// 	//HashMap<>
-	// }
 }
