@@ -1,0 +1,17 @@
+{
+	"required": true,
+	"package": "xyz.turtletowerz.DynChunks.mixin",
+	"compatibilityLevel": "JAVA_17",
+
+	"mixins": [
+		"ChunkStorageMixin",
+		"ChunkStorageInvokerMixin"
+	],
+
+	"client": [],
+
+	"injectors": {
+	  "defaultRequire": 1,
+	  "maxShiftBy": 2
+	}
+  }
